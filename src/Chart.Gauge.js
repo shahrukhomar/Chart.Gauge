@@ -7,6 +7,9 @@
         helpers = Chart.helpers;
 
     var defaultConfig = {
+        // int - Pointer position
+        pointerPosition: 0,
+
         //Boolean - Whether we should show a stroke on each segment
         segmentShowStroke : true,
 
@@ -53,9 +56,19 @@
                 x : this.chart.width/2,
                 y : this.chart.height
             });
-
+            var pointerDotRadius = helpers.min([this.chart.width,this.chart.height])/50;
+            this.pointerDot = new Chart.Point({
+                ctx: this.chart.ctx,
+                x : this.chart.width/2,
+                y : this.chart.height-pointerDotRadius,
+                radius: pointerDotRadius,
+                showStroke: true,
+                strokeWidth: 1,
+                strokeColor: '#CCCCCC',
+                fillColor: '#FFFFFF'
+            });
             //Set up tooltip events on the chart
-            if (this.options.showTooltips){
+            if (this.options.showTooltips) {
                 helpers.bindEvents(this, this.options.tooltipEvents, function(evt){
                     var activeSegments = (evt.type !== 'mouseout') ? this.getSegmentsAtEvent(evt) : [];
 
@@ -130,6 +143,9 @@
                 this.update();
             }
         },
+        setPointer: function(position) {
+            console.log(this.total)
+        },
         calculateCircumference : function(value){
             return (Math.PI)*(value / this.total);
         },
@@ -172,6 +188,14 @@
                     innerRadius : (this.outerRadius/100) * this.options.percentageInnerCutout
                 });
             }, this);
+
+            var pointerDotRadius = helpers.min([this.chart.width,this.chart.height])/50;
+            this.pointerDot.update({
+                x : this.chart.width/2,
+                y : this.chart.height-pointerDotRadius,
+                radius: pointerDotRadius
+            })
+            this.pointerDot.draw();
         },
         draw : function(easeDecimal){
             var animDecimal = (easeDecimal) ? easeDecimal : 1;
@@ -195,6 +219,7 @@
                     this.segments[index+1].startAngle = segment.endAngle;
                 }
             },this);
+            this.pointerDot.draw();
         }
     });
 }).call(this);

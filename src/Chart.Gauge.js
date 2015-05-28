@@ -39,7 +39,9 @@
 
         pointerColor: '#000000',
 
-        pointerStrokeSize: 2
+        pointerStrokeSize: 2,
+
+        pointerAngle: 0
     };
 
     // additional line type
@@ -105,8 +107,9 @@
                 x: this.chart.width / 2,
                 // adjusting for the stroke width by subtracting pointer stroke size
                 y: this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
+                // pointer length is relative to the chart width
                 l: this.chart.width / 2 - 20,
-                t: 1.24,
+                t: this.defaults.pointerAngle,
                 strokeColor: this.defaults.pointerColor,
                 strokeWidth: this.defaults.pointerStrokeSize,
             });
@@ -187,8 +190,7 @@
             }
         },
         setPointer: function(position) {
-            console.log(position)
-            console.log(this.total)
+            this.defaults.pointerAngle = (Math.PI/100) * position;
         },
         calculateCircumference : function(value){
             return (Math.PI)*(value / this.total);
@@ -272,6 +274,7 @@
                     this.segments[index+1].startAngle = segment.endAngle;
                 }
             },this);
+            this.pointerLine.update({t: this.defaults.pointerAngle});
             this.pointerLine.draw();
             this.pointerDot.draw();
         }

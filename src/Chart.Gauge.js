@@ -26,7 +26,7 @@
         animationSteps : 100,
 
         //String - Animation easing effect
-        animationEasing : "easeOutBounce",
+        animationEasing : "easeOutExpo",
 
         //Boolean - Whether we animate the rotation of the Doughnut
         animateRotate : true,
@@ -39,7 +39,7 @@
 
         pointerColor: '#000000',
 
-        pointerStrokeSize: 2,
+        pointerStrokeSize: 3,
 
         pointerAngle: 0
     };
@@ -86,13 +86,13 @@
             this.outerRadius = (helpers.min([this.chart.width,this.chart.height]) - this.options.segmentStrokeWidth/2)/2;
             this.SegmentArc = Chart.Arc.extend({
                 ctx : this.chart.ctx,
-                x : this.chart.width / 2,
+                x : this.chart.width/2,
                 y : this.chart.height - pointerDotRadius
             });
 
             this.pointerDot = new Chart.Point({
                 ctx: this.chart.ctx,
-                x : this.chart.width / 2,
+                x : this.chart.width/2,
                 // adjusting for the stroke width by subtracting pointer stroke size
                 y : this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
                 radius: pointerDotRadius,
@@ -104,12 +104,13 @@
 
             this.pointerLine = new Chart.Line({
                 ctx: this.chart.ctx,
-                x: this.chart.width / 2,
+                x: this.chart.width/2,
                 // adjusting for the stroke width by subtracting pointer stroke size
                 y: this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
                 // pointer length is relative to the chart width
-                l: this.chart.width / 2 - 20,
+                l: this.chart.width/2 - 20,
                 t: this.defaults.pointerAngle,
+                t0: this.defaults.pointerAngle,
                 strokeColor: this.defaults.pointerColor,
                 strokeWidth: this.defaults.pointerStrokeSize,
             });
@@ -191,6 +192,10 @@
         },
         setPointer: function(position) {
             this.defaults.pointerAngle = (Math.PI/100) * position;
+            // set the current angle as the `t0` reference
+            this.pointerLine.t0 = this.pointerLine.t;
+
+            return this;
         },
         calculateCircumference : function(value){
             return (Math.PI)*(value / this.total);
@@ -237,12 +242,12 @@
             }, this);
 
             this.pointerLine.update({
-                x: this.chart.width / 2,
+                x: this.chart.width/2,
                 // adjusting for the stroke width by subtracting pointer stroke size
                 y: this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
-                l: this.chart.width / 2 - 20,
+                l: this.chart.width/2 - 20,
+                t: this.defaults.pointerAngle
             });
-
             this.pointerLine.draw();
 
             this.pointerDot.update({
@@ -252,17 +257,15 @@
             })
             this.pointerDot.draw();
         },
+
         draw : function(easeDecimal){
             var animDecimal = (easeDecimal) ? easeDecimal : 1;
             this.clear();
 
             helpers.each(this.segments,function(segment,index){
-                segment.transition({
-                    circumference : this.calculateCircumference(segment.value),
-                    outerRadius : this.outerRadius,
-                    innerRadius : (this.outerRadius/100) * this.options.percentageInnerCutout
-                },animDecimal);
-
+                segment.circumference = this.calculateCircumference(segment.value),
+                segment.outerRadius = this.outerRadius,
+                segment.innerRadius = (this.outerRadius/100) * this.options.percentageInnerCutout
                 segment.endAngle = segment.startAngle + segment.circumference;
 
                 segment.draw();
@@ -274,7 +277,10 @@
                     this.segments[index+1].startAngle = segment.endAngle;
                 }
             },this);
-            this.pointerLine.update({t: this.defaults.pointerAngle});
+
+            // animate the pointer by multiplying it by animation decimal. Using t0 as starting point
+            // to make sure the pointer only animates the difference
+            this.pointerLine.update({t: this.pointerLine.t0 + ((this.defaults.pointerAngle - this.pointerLine.t0) * animDecimal)});
             this.pointerLine.draw();
             this.pointerDot.draw();
         }

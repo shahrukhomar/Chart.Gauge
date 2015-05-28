@@ -1,6 +1,10 @@
 # Chart.Gauge
 Gauge chart type for [chartjs.org](http://www.chartjs.org)
 
+## Demo
+
+Demo on [jsbin](http://jsbin.com/fedukarucu/1/edit?html,js,output)
+
 ## Installation
 
 Inlcude the `src/Chart.Gauge.js` file in your page after the chart.js `Chart.Core`. The Gauge chart type will now be available as `Chart.Gauge`

@@ -35,9 +35,40 @@
         animateScale : false,
 
         //String - A legend template
-        legendTemplate : "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<segments.length; i++){%><li><span style=\"background-color:<%=segments[i].fillColor%>\"></span><%if(segments[i].label){%><%=segments[i].label%><%}%></li><%}%></ul>"
+        legendTemplate : "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<segments.length; i++){%><li><span style=\"background-color:<%=segments[i].fillColor%>\"></span><%if(segments[i].label){%><%=segments[i].label%><%}%></li><%}%></ul>",
 
+        pointerColor: '#000000',
+
+        pointerStrokeSize: 2
     };
+
+    // additional line type
+    Chart.Line = Chart.Element.extend({
+        draw: function() {
+            var ctx = this.ctx;
+            // save context state so we can restore later
+            ctx.save();
+            ctx.beginPath();
+            ctx.strokeStyle = this.strokeColor;
+            ctx.lineWidth = this.strokeWidth;
+            // move the context origin to the specified origin
+            ctx.translate(this.x,this.y);
+            // rotate the entire context by specified radians, we are drawing
+            // a simple line so rotating the entire context is fine
+            ctx.rotate(this.t);
+            // move to the translated origin
+            ctx.moveTo(0,0);
+            // draw a line along the x-axis of the specified length. The line be
+            // rotated by the angle `t` even though we are drawing along the x-axis
+            // because the entire context has been rotated by `t`
+            // multiplying by -1 as we want to start from negative x-axis
+            ctx.lineTo(-1 * this.l,0);
+            ctx.stroke();
+            ctx.closePath();
+            //ctx.rotate(-0.40);
+            ctx.restore();
+        }
+    });
 
     Chart.Type.extend({
         //Passing in a name registers this chart in the Chart namespace
@@ -47,25 +78,37 @@
         //Initialize is fired when the chart is initialized - Data is passed in as a parameter
         //Config is automatically merged by the core of Chart.js, and is available at this.options
         initialize:  function(data){
-
             //Declare segments as a static property to prevent inheriting across the Chart type prototype
             this.segments = [];
+            var pointerDotRadius = helpers.min([this.chart.width,this.chart.height])/50;
             this.outerRadius = (helpers.min([this.chart.width,this.chart.height]) - this.options.segmentStrokeWidth/2)/2;
             this.SegmentArc = Chart.Arc.extend({
                 ctx : this.chart.ctx,
-                x : this.chart.width/2,
-                y : this.chart.height
+                x : this.chart.width / 2,
+                y : this.chart.height - pointerDotRadius
             });
-            var pointerDotRadius = helpers.min([this.chart.width,this.chart.height])/50;
+
             this.pointerDot = new Chart.Point({
                 ctx: this.chart.ctx,
-                x : this.chart.width/2,
-                y : this.chart.height-pointerDotRadius,
+                x : this.chart.width / 2,
+                // adjusting for the stroke width by subtracting pointer stroke size
+                y : this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
                 radius: pointerDotRadius,
                 showStroke: true,
-                strokeWidth: 1,
-                strokeColor: '#CCCCCC',
+                strokeWidth: this.defaults.pointerStrokeSize,
+                strokeColor: this.defaults.pointerColor,
                 fillColor: '#FFFFFF'
+            });
+
+            this.pointerLine = new Chart.Line({
+                ctx: this.chart.ctx,
+                x: this.chart.width / 2,
+                // adjusting for the stroke width by subtracting pointer stroke size
+                y: this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
+                l: this.chart.width / 2 - 20,
+                t: 1.24,
+                strokeColor: this.defaults.pointerColor,
+                strokeWidth: this.defaults.pointerStrokeSize,
             });
             //Set up tooltip events on the chart
             if (this.options.showTooltips) {
@@ -144,6 +187,7 @@
             }
         },
         setPointer: function(position) {
+            console.log(position)
             console.log(this.total)
         },
         calculateCircumference : function(value){
@@ -177,9 +221,10 @@
         },
 
         reflow : function(){
+            var pointerDotRadius = helpers.min([this.chart.width,this.chart.height])/50;
             helpers.extend(this.SegmentArc.prototype,{
                 x : this.chart.width/2,
-                y : this.chart.height
+                y : this.chart.height - pointerDotRadius
             });
             this.outerRadius = (helpers.min([this.chart.width,this.chart.height]) - this.options.segmentStrokeWidth/2)/2;
             helpers.each(this.segments, function(segment){
@@ -189,10 +234,18 @@
                 });
             }, this);
 
-            var pointerDotRadius = helpers.min([this.chart.width,this.chart.height])/50;
+            this.pointerLine.update({
+                x: this.chart.width / 2,
+                // adjusting for the stroke width by subtracting pointer stroke size
+                y: this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
+                l: this.chart.width / 2 - 20,
+            });
+
+            this.pointerLine.draw();
+
             this.pointerDot.update({
                 x : this.chart.width/2,
-                y : this.chart.height-pointerDotRadius,
+                y : this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
                 radius: pointerDotRadius
             })
             this.pointerDot.draw();
@@ -219,6 +272,7 @@
                     this.segments[index+1].startAngle = segment.endAngle;
                 }
             },this);
+            this.pointerLine.draw();
             this.pointerDot.draw();
         }
     });

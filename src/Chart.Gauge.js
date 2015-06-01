@@ -70,7 +70,6 @@
             ctx.lineTo(-1 * this.l,0);
             ctx.stroke();
             ctx.closePath();
-            //ctx.rotate(-0.40);
             ctx.restore();
         }
     });
@@ -104,11 +103,11 @@
                 ctx: this.chart.ctx,
                 x : this.chart.width/2,
                 // adjusting for the stroke width by subtracting pointer stroke size
-                y : this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
+                y : this.chart.height - pointerDotRadius - this.options.pointerStrokeSize,
                 radius: pointerDotRadius,
                 showStroke: true,
-                strokeWidth: this.defaults.pointerStrokeSize,
-                strokeColor: this.defaults.pointerColor,
+                strokeWidth: this.options.pointerStrokeSize,
+                strokeColor: this.options.pointerColor,
                 fillColor: '#FFFFFF'
             });
 
@@ -116,13 +115,13 @@
                 ctx: this.chart.ctx,
                 x: this.chart.width/2,
                 // adjusting for the stroke width by subtracting pointer stroke size
-                y: this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
+                y: this.chart.height - pointerDotRadius - this.options.pointerStrokeSize,
                 // pointer length is relative to the chart width
                 l: this.outerRadius - 2 * this.outerRadius * this.options.pointerDotSize,
-                t: this.defaults.pointerAngle,
-                t0: this.defaults.pointerAngle,
-                strokeColor: this.defaults.pointerColor,
-                strokeWidth: this.defaults.pointerStrokeSize,
+                t: this.options.pointerAngle,
+                t0: this.options.pointerAngle,
+                strokeColor: this.options.pointerColor,
+                strokeWidth: this.options.pointerStrokeSize,
             });
             //Set up tooltip events on the chart
             if (this.options.showTooltips) {
@@ -201,7 +200,7 @@
             }
         },
         setPointer: function(position) {
-            this.defaults.pointerAngle = (Math.PI/100) * position;
+            this.options.pointerAngle = (Math.PI/100) * position;
             // set the current angle as the `t0` reference
             this.pointerLine.t0 = this.pointerLine.t;
 
@@ -254,15 +253,15 @@
             this.pointerLine.update({
                 x: this.chart.width/2,
                 // adjusting for the stroke width by subtracting pointer stroke size
-                y: this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
+                y: this.chart.height - pointerDotRadius - this.options.pointerStrokeSize,
                 l: this.chart.width/2 - 20,
-                t: this.defaults.pointerAngle
+                t: this.options.pointerAngle
             });
             this.pointerLine.draw();
 
             this.pointerDot.update({
                 x : this.chart.width/2,
-                y : this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
+                y : this.chart.height - pointerDotRadius - this.options.pointerStrokeSize,
                 radius: pointerDotRadius
             })
             this.pointerDot.draw();
@@ -290,7 +289,7 @@
 
             // animate the pointer by multiplying it by animation decimal. Using t0 as starting point
             // to make sure the pointer only animates the difference
-            this.pointerLine.update({t: this.pointerLine.t0 + ((this.defaults.pointerAngle - this.pointerLine.t0) * animDecimal)});
+            this.pointerLine.update({t: this.pointerLine.t0 + ((this.options.pointerAngle - this.pointerLine.t0) * animDecimal)});
             this.pointerLine.draw();
             this.pointerDot.draw();
         }

@@ -7,9 +7,6 @@
         helpers = Chart.helpers;
 
     var defaultConfig = {
-        // int - Pointer position
-        pointerPosition: 0,
-
         //Boolean - Whether we should show a stroke on each segment
         segmentShowStroke : true,
 
@@ -37,11 +34,17 @@
         //String - A legend template
         legendTemplate : "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<segments.length; i++){%><li><span style=\"background-color:<%=segments[i].fillColor%>\"></span><%if(segments[i].label){%><%=segments[i].label%><%}%></li><%}%></ul>",
 
+        //String - Fill & stroke olour for the pointer needle
         pointerColor: '#000000',
 
-        pointerStrokeSize: 3,
+        //Number - Pointer size in pixels
+        pointerStrokeSize: 2.5,
 
-        pointerAngle: 0
+        //Number - Pointer deflection in radians
+        pointerAngle: 0,
+
+        //Number - Fraction of guage radius that should be used for the pointer dot
+        pointerDotSize: 1/50
     };
 
     // additional line type
@@ -80,10 +83,17 @@
         //Initialize is fired when the chart is initialized - Data is passed in as a parameter
         //Config is automatically merged by the core of Chart.js, and is available at this.options
         initialize:  function(data){
+            var minDimension = helpers.min([this.chart.width,this.chart.height]),
+                pointerDotRadius = minDimension * this.options.pointerDotSize;
+
             //Declare segments as a static property to prevent inheriting across the Chart type prototype
             this.segments = [];
-            var pointerDotRadius = helpers.min([this.chart.width,this.chart.height])/50;
-            this.outerRadius = (helpers.min([this.chart.width,this.chart.height]) - this.options.segmentStrokeWidth/2)/2;
+            this.outerRadius = minDimension - pointerDotRadius - this.options.segmentStrokeWidth/2;
+
+            if (minDimension === this.chart.width) {
+                this.outerRadius /=2;
+            }
+
             this.SegmentArc = Chart.Arc.extend({
                 ctx : this.chart.ctx,
                 x : this.chart.width/2,
@@ -108,7 +118,7 @@
                 // adjusting for the stroke width by subtracting pointer stroke size
                 y: this.chart.height - pointerDotRadius - this.defaults.pointerStrokeSize,
                 // pointer length is relative to the chart width
-                l: this.chart.width/2 - 20,
+                l: this.outerRadius - 2 * this.outerRadius * this.options.pointerDotSize,
                 t: this.defaults.pointerAngle,
                 t0: this.defaults.pointerAngle,
                 strokeColor: this.defaults.pointerColor,

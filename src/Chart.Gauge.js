@@ -40,11 +40,13 @@
         //Number - Pointer size in pixels
         pointerStrokeSize: 2.5,
 
-        //Number - Pointer deflection in radians
-        pointerAngle: 0,
+        //Number - Percent pointer deflection (0-100)
+        pointerValue: 0,
 
         //Number - Fraction of guage radius that should be used for the pointer dot
-        pointerDotSize: 1/50
+        pointerDotSize: 1/50,
+
+        showPointerValue: true
     };
 
     // additional line type
@@ -82,16 +84,14 @@
         //Initialize is fired when the chart is initialized - Data is passed in as a parameter
         //Config is automatically merged by the core of Chart.js, and is available at this.options
         initialize:  function(data){
-            var minDimension = helpers.min([this.chart.width,this.chart.height]),
+            var minDimension = helpers.min([this.chart.width/2, this.chart.height]),
                 pointerDotRadius = minDimension * this.options.pointerDotSize;
+
+            this.pointerAngle = this.getPointerDeflectionFromPct(this.options.pointerValue);
 
             //Declare segments as a static property to prevent inheriting across the Chart type prototype
             this.segments = [];
             this.outerRadius = minDimension - pointerDotRadius - this.options.segmentStrokeWidth/2;
-
-            if (minDimension === this.chart.width) {
-                this.outerRadius /=2;
-            }
 
             this.SegmentArc = Chart.Arc.extend({
                 ctx : this.chart.ctx,
@@ -118,8 +118,8 @@
                 y: this.chart.height - pointerDotRadius - this.options.pointerStrokeSize,
                 // pointer length is relative to the chart width
                 l: this.outerRadius - 2 * this.outerRadius * this.options.pointerDotSize,
-                t: this.options.pointerAngle,
-                t0: this.options.pointerAngle,
+                t: this.pointerAngle,
+                t0: this.pointerAngle,
                 strokeColor: this.options.pointerColor,
                 strokeWidth: this.options.pointerStrokeSize,
             });
@@ -199,12 +199,22 @@
                 this.update();
             }
         },
+
         setPointer: function(position) {
-            this.options.pointerAngle = (Math.PI/100) * position;
+            this.options.pointerValue = position;
+            this.pointerAngle = this.getPointerDeflectionFromPct(position);
             // set the current angle as the `t0` reference
             this.pointerLine.t0 = this.pointerLine.t;
 
             return this;
+        },
+
+        getPointerDeflectionFromPct: function(pct) {
+            if (pct >= 100) {
+                return Math.PI;
+            }
+
+            return (Math.PI/100) * pct;
         },
         calculateCircumference : function(value){
             return (Math.PI)*(value / this.total);
@@ -237,12 +247,15 @@
         },
 
         reflow : function(){
-            var pointerDotRadius = helpers.min([this.chart.width,this.chart.height])/50;
+            var minDimension = helpers.min([this.chart.width/2, this.chart.height]),
+                pointerDotRadius = minDimension * this.options.pointerDotSize;
+
             helpers.extend(this.SegmentArc.prototype,{
                 x : this.chart.width/2,
                 y : this.chart.height - pointerDotRadius
             });
-            this.outerRadius = (helpers.min([this.chart.width,this.chart.height]) - this.options.segmentStrokeWidth/2)/2;
+            this.outerRadius = minDimension - pointerDotRadius - this.options.segmentStrokeWidth/2;
+
             helpers.each(this.segments, function(segment){
                 segment.update({
                     outerRadius : this.outerRadius,
@@ -254,8 +267,8 @@
                 x: this.chart.width/2,
                 // adjusting for the stroke width by subtracting pointer stroke size
                 y: this.chart.height - pointerDotRadius - this.options.pointerStrokeSize,
-                l: this.chart.width/2 - 20,
-                t: this.options.pointerAngle
+                l: this.outerRadius - 2 * this.outerRadius * this.options.pointerDotSize,
+                t: this.pointerAngle
             });
             this.pointerLine.draw();
 
@@ -263,8 +276,21 @@
                 x : this.chart.width/2,
                 y : this.chart.height - pointerDotRadius - this.options.pointerStrokeSize,
                 radius: pointerDotRadius
-            })
+            });
+
+            if (this.options.showPointerValue) {
+                this.drawLabel();
+            }
             this.pointerDot.draw();
+        },
+
+        drawLabel: function() {
+            var ctx = this.chart.ctx;
+            ctx.fillStyle = '#000';
+            ctx.font = "20px sans-serif";
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "left";
+            ctx.fillText(this.options.pointerValue, (this.chart.width - ctx.measureText('32').width )/2, this.chart.height - ((this.outerRadius/100) * this.options.percentageInnerCutout)/2);
         },
 
         draw : function(easeDecimal){
@@ -287,9 +313,13 @@
                 }
             },this);
 
+            if (this.options.showPointerValue) {
+                this.drawLabel();
+            }
+
             // animate the pointer by multiplying it by animation decimal. Using t0 as starting point
             // to make sure the pointer only animates the difference
-            this.pointerLine.update({t: this.pointerLine.t0 + ((this.options.pointerAngle - this.pointerLine.t0) * animDecimal)});
+            this.pointerLine.update({t: this.pointerLine.t0 + ((this.pointerAngle - this.pointerLine.t0) * animDecimal)});
             this.pointerLine.draw();
             this.pointerDot.draw();
         }
